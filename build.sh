@@ -54,7 +54,7 @@ start_time="$(date -u +%s)"
 # Using Fedora dnf package manager
 dnf update -y
 dnf install -y wget rpm-build dnf-plugins-core grub2-pc-modules grub2-efi-x64-modules \
-    squashfs-tools xorriso ca-certificates curl libusb-devel gcc make gzip xz \
+    squashfs-tools xorriso ca-certificates curl libusbx-devel gcc make gzip xz \
     unzip glibc-devel
 
 # Determine architecture-specific settings for Fedora
@@ -63,7 +63,7 @@ if [ "$ARCH" = 'amd64' ]; then
     FEDORA_RELEASE='stable'
 else
     # Install dependencies to build odysseyn1x for i686
-    dnf install -y glibc-devel.i686 libusb-devel.i686 gcc-c++.i686
+    dnf install -y glibc-devel.i686 libusbx-devel.i686 gcc-c++.i686
     REPO_ARCH='i386'
     FEDORA_RELEASE='stable'
 fi
