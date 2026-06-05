@@ -21,7 +21,7 @@ jobs:
       run: |
         dnf update -y
         dnf install -y wget rpm-build dnf-plugins-core grub2-pc-modules grub2-efi-x64-modules \
-          squashfs-tools xorriso ca-certificates curl libusb-devel gcc make gzip xz \
+          squashfs-tools xorriso ca-certificates curl libusbx-devel gcc make gzip xz \
           unzip glibc-devel git
 
     - name: Build for amd64
@@ -33,7 +33,7 @@ jobs:
 
     - name: Build for i686
       run: |
-        dnf install -y glibc-devel.i686 libusb-devel.i686 gcc-c++.i686
+        dnf install -y glibc-devel.i686 libusbx-devel.i686 gcc-c++.i686
         sed -i "s/ARCH='amd64'/ARCH='i686'/g" build.sh
         chmod +x build.sh
         ./build.sh
