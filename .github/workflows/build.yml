@@ -10,18 +10,36 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
 
     steps:
 
     - uses: actions/checkout@v2
 
+    - name: Install dependencies
+      run: |
+        dnf update -y
+        dnf install -y wget rpm-build dnf-plugins-core grub2-pc-modules grub2-efi-x64-modules \
+          squashfs-tools xorriso ca-certificates curl libusb-devel gcc make gzip xz \
+          unzip glibc-devel git
+
     - name: Build for amd64
       run: |
         sed -i "/Exit if user isn't root/aVERSION='$(cat version)'" build.sh
         sed -i "/Exit if user isn't root/aARCH='amd64'" build.sh
-        sudo ./build.sh
+        chmod +x build.sh
+        ./build.sh
 
     - name: Build for i686
       run: |
+        dnf install -y glibc-devel.i686 libusb-devel.i686 gcc-c++.i686
         sed -i "s/ARCH='amd64'/ARCH='i686'/g" build.sh
-        sudo ./build.sh
+        chmod +x build.sh
+        ./build.sh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: odysseyn1x-iso
+        path: odysseyn1x-*.iso
