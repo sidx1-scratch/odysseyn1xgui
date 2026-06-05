@@ -1,6 +1,7 @@
 #!/bin/sh
 # Made with <3 by raspberryenvoie
 # odysseyn1x build script (a fork of asineth/checkn1x)
+# Modified to use Fedora Workstation as base
 
 # Exit if user isn't root
 [ "$(id -u)" -ne 0 ] && {
@@ -50,43 +51,60 @@ set -e -u -v
 start_time="$(date -u +%s)"
 
 # Install dependencies to build odysseyn1x
-apt-get update
-apt-get install -y --no-install-recommends wget debootstrap grub-pc-bin \
-    grub-efi-amd64-bin mtools squashfs-tools xorriso ca-certificates curl \
-    libusb-1.0-0-dev gcc make gzip xz-utils unzip libc6-dev
+# Using Fedora dnf package manager
+dnf update -y
+dnf install -y wget rpm-build dnf-plugins-core grub2-pc-modules grub2-efi-x64-modules \
+    squashfs-tools xorriso ca-certificates curl libusb-devel gcc make gzip xz \
+    unzip glibc-devel
 
+# Determine architecture-specific settings for Fedora
 if [ "$ARCH" = 'amd64' ]; then
-    REPO_ARCH='amd64' # Debian's 64-bit repos are "amd64"
-    KERNEL_ARCH='amd64' # Debian's 32-bit kernels are suffixed "amd64"
+    REPO_ARCH='x86_64'
+    FEDORA_RELEASE='stable'
 else
-    # Install depencies to build odysseyn1x for i686
-    dpkg --add-architecture i386
-    apt-get update
-    apt install -y --no-install-recommends libusb-1.0-0-dev:i386 gcc-multilib
-    REPO_ARCH='i386' # Debian's 32-bit repos are "i386"
-    KERNEL_ARCH='686' # Debian's 32-bit kernels are suffixed "-686"
+    # Install dependencies to build odysseyn1x for i686
+    dnf install -y glibc-devel.i686 libusb-devel.i686 gcc-c++.i686
+    REPO_ARCH='i386'
+    FEDORA_RELEASE='stable'
 fi
 
-# Configure the base system
+# Configure the base system using Fedora
+# Using dnf instead of debootstrap for Fedora-based systems
 mkdir -p work/chroot work/iso/live work/iso/boot/grub
-debootstrap --variant=minbase --arch="$REPO_ARCH" stable work/chroot 'http://mirror.xtom.com.hk/debian/'
+
+# Create minimal Fedora base with dnf
+dnf install -y --installroot="$(pwd)/work/chroot" --releasever=latest \
+    basesystem filesystem setup yum dnf
+
+# Mount necessary filesystems
 mount --bind /proc work/chroot/proc
 mount --bind /sys work/chroot/sys
 mount --bind /dev work/chroot/dev
 cp /etc/resolv.conf work/chroot/etc
-cat << EOF | chroot work/chroot /bin/bash
-# Set debian frontend to noninteractive
-export DEBIAN_FRONTEND=noninteractive
 
-# Install requiered packages
-apt-get install -y --no-install-recommends linux-image-$KERNEL_ARCH live-boot \
-  systemd systemd-sysv usbmuxd libusbmuxd-tools openssh-client sshpass xz-utils whiptail
-# Remove apt as it won't be usable anymore
-apt purge apt -y --allow-remove-essential
+cat << EOF | chroot work/chroot /bin/bash
+# Set dnf to be non-interactive
+export DNFPLUGIN_ENABLED=1
+export FEDORA_FRONTEND=noninteractive
+
+# Install required packages from Fedora repositories
+dnf install -y --setopt=tsflags=nodocs kernel-core kernel-modules live-boot \
+    systemd systemd-libs usbmuxd openssh-clients openssh-keygen sshpass xz whiptail \
+    firefox wget curl ca-certificates libusb
+
+# Install minimal X11 and GTK for GUI support (optional, if needed)
+# Uncomment if you want full GUI support:
+# dnf install -y xorg-x11-server-Xvfb fluxbox
+
+# Clean up to reduce size
+dnf clean all
+rm -rf /var/cache/dnf/*
 EOF
+
 # Change initramfs compression to xz
-sed -i 's/COMPRESS=gzip/COMPRESS=xz/' work/chroot/etc/initramfs-tools/initramfs.conf
-chroot work/chroot update-initramfs -u
+sed -i 's/COMPRESS=gzip/COMPRESS=xz/' work/chroot/etc/dracut.conf.d/* 2>/dev/null || true
+chroot work/chroot dracut --hostonly --hostonly-cmdline -f
+
 (
     cd work/chroot
     # Empty some directories to make the system smaller
@@ -98,8 +116,7 @@ chroot work/chroot update-initramfs -u
     rm -rf var/log/* \
         var/cache/* \
         var/backups/* \
-        var/lib/apt/* \
-        var/lib/dpkg/* \
+        var/lib/dnf/* \
         usr/share/doc/* \
         usr/share/man/* \
         usr/share/info/* \
@@ -232,8 +249,19 @@ rm -f work/chroot/etc/resolv.conf
 umount work/chroot/proc
 umount work/chroot/sys
 umount work/chroot/dev
-cp work/chroot/vmlinuz work/iso/boot
-cp work/chroot/initrd.img work/iso/boot
+
+# Get kernel and initramfs from Fedora chroot
+if [ "$ARCH" = 'amd64' ]; then
+    KERNEL_PATH=$(find work/chroot/boot -name 'vmlinuz-*' -type f | head -n1)
+    INITRD_PATH=$(find work/chroot/boot -name 'initramfs-*' -type f | head -n1)
+else
+    KERNEL_PATH=$(find work/chroot/boot -name 'vmlinuz-*' -type f | head -n1)
+    INITRD_PATH=$(find work/chroot/boot -name 'initramfs-*' -type f | head -n1)
+fi
+
+cp "$KERNEL_PATH" work/iso/boot/vmlinuz
+cp "$INITRD_PATH" work/iso/boot/initrd.img
+
 mksquashfs work/chroot work/iso/live/filesystem.squashfs -noappend -e boot -comp xz -Xbcj x86
 grub-mkrescue -o "odysseyn1x-$VERSION-$ARCH.iso" work/iso \
     --compress=xz \
