@@ -1,6 +1,6 @@
 #!/bin/sh
-# Made with <3 by raspberryenvoie
-# odysseyn1x build script (a fork of asineth/checkn1x)
+# Made with <3 by raspberryenvoie and forked by sidx1-scratch
+# odysseyn1xgui build script (a fork of asineth/checkn1x)
 # Modified to use Fedora Workstation as base
 
 # Exit if user isn't root
@@ -19,7 +19,7 @@ NORMAL="$(tput sgr0)"
 cat << EOF
 ${GREEN}############################################${NORMAL}
 ${GREEN}#                                          #${NORMAL}
-${GREEN}#  ${BLUE}Welcome to the odysseyn1x build script  ${GREEN}#${NORMAL}
+${GREEN}#  ${BLUE}Welcome to the odysseyn1xgui build script  ${GREEN}#${NORMAL}
 ${GREEN}#                                          #${NORMAL}
 ${GREEN}############################################${NORMAL}
 
