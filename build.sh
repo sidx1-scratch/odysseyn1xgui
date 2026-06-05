@@ -1,7 +1,7 @@
 #!/bin/sh
 # Made with <3 by raspberryenvoie and forked by sidx1-scratch
 # odysseyn1xgui build script (a fork of asineth/checkn1x)
-# Modified to use Fedora Workstation as base
+# Modified to use Fedora Workstation as base and added firefox as package
 
 # Exit if user isn't root
 [ "$(id -u)" -ne 0 ] && {
