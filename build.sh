@@ -5,7 +5,7 @@
 
 # Exit if user isn't root
 [ "$(id -u)" -ne 0 ] && {
-    echo 'Please run as root'
+    echo 'Please run as root and try again'
     exit 1
 }
 
