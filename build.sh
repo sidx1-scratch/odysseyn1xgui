@@ -74,6 +74,7 @@ mkdir -p work/chroot work/iso/live work/iso/boot/grub
 
 # Create minimal Fedora base with dnf
 dnf install -y --installroot="$(pwd)/work/chroot" --releasever=latest \
+    --use-host-config \
     basesystem filesystem setup yum dnf
 
 # Mount necessary filesystems
